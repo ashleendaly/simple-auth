@@ -1,15 +1,19 @@
+use std::path::Path;
+use serde::{Deserialize, Serialize};
+
 #[derive(PartialEq, Debug)]
 pub enum LoginAction {
     Granted(LoginRole),
     Denied,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum LoginRole {
     Admin,
     User,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub username: String,
     pub password: String,
@@ -26,11 +30,24 @@ impl User {
     }
 }
 
-pub fn get_users() -> Vec<User> {
+pub fn get_default_users() -> Vec<User> {
     vec![
         User::new("admin", "password", LoginRole::Admin),
         User::new("ash", "password", LoginRole::User),
     ]
+}
+
+pub fn get_users() -> Vec<User> {
+    let users_path = Path::new("users.json");
+    if users_path.exists() {
+        let users_json = std::fs::read_to_string(users_path).unwrap();
+        serde_json::from_str(&users_json).unwrap()
+    } else {
+        let users = get_default_users();
+        let users_json = serde_json::to_string(&users).unwrap();
+        std::fs::write(users_path, users_json).unwrap();
+        users
+    }
 }
 
 pub fn get_admin_usernames() -> Vec<String> {
