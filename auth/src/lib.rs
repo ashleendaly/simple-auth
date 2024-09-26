@@ -24,10 +24,18 @@ impl User {
     pub fn new(username: &str, password: &str, role: LoginRole) -> User {
         User {
             username: username.to_lowercase(),
-            password: password.to_string(),
+            password: hash_password(password),
             role
         }
     }
+}
+
+pub fn hash_password(password: &str) -> String {
+    use sha2::{Sha256, Digest};
+
+    let mut hasher = Sha256::new();
+    hasher.update(password);
+    format!("{:X}", hasher.finalize())
 }
 
 pub fn get_default_users() -> Vec<User> {
@@ -61,7 +69,7 @@ pub fn get_admin_usernames() -> Vec<String> {
 pub fn login(username: &str, password: &str) -> Option<LoginAction> {
     let users = get_users();
     if let Some(user) = users.iter().find(|user| user.username == username.to_lowercase()) {
-        if user.password == password {
+        if user.password == hash_password(password) {
             return Some(LoginAction::Granted(user.role.clone()))
         } else {
             return Some(LoginAction::Denied)
